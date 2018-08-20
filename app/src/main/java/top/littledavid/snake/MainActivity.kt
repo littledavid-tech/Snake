@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
                         .setTitle("The snake has dead!")
                         .setMessage("Which are you want to do?")
                         .setPositiveButton("Restart", DialogInterface.OnClickListener { dialog, which ->
-                            snake.start()
+                            snake.restart()
                             dialog.dismiss()
                         })
                         .setNegativeButton("Exit game", DialogInterface.OnClickListener { dialog, which ->
@@ -63,5 +63,10 @@ class MainActivity : AppCompatActivity() {
             R.id.btnLeft -> snake.direction = SnakeGameView.DIRECTION.DIRECTION_LEFT
             R.id.btnRight -> snake.direction = SnakeGameView.DIRECTION.DIRECTION_RIGHT
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        snake.isRunning = false
     }
 }

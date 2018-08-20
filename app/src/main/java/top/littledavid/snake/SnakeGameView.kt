@@ -1,10 +1,13 @@
 package top.littledavid.snake
 
+import android.app.Activity
 import android.content.Context
 import android.graphics.*
 import android.os.SystemClock
+import android.preference.PreferenceActivity
 import android.util.AttributeSet
 import android.view.View
+import top.littledavid.logerlibrary.e
 import top.littledavid.snake.callbacks.OnCrashListener
 import top.littledavid.snake.callbacks.OnEatenFoodListener
 import java.util.*
@@ -78,6 +81,8 @@ class SnakeGameView(context: Context, attributeSet: AttributeSet) : View(context
         private set
 
     private val random = Random()
+
+    var isRunning = true
 
     /**
      * 绘制游戏对象
@@ -176,13 +181,19 @@ class SnakeGameView(context: Context, attributeSet: AttributeSet) : View(context
                     ) {
                 isStarted = false
                 if (this.crashListener != null) {
+                    "Out of the border".e()
+                    "head row ${head.row}".e()
+                    "head column ${head.column}".e()
                     crashListener!!.onCrash()
                 }
             }
             //和自己碰撞的检测
-            if (snake.firstOrNull { it != head && it.row == head.row && it.column == head.column } != null) {
+            else if (snake.firstOrNull { it.isHead == false && it.row == head.row && it.column == head.column } != null) {
                 isStarted = false
                 if (this.crashListener != null) {
+                    "Catch itself".e()
+                    "head row ${head.row}".e()
+                    "head column ${head.column}".e()
                     crashListener!!.onCrash()
                 }
             }
@@ -261,43 +272,28 @@ class SnakeGameView(context: Context, attributeSet: AttributeSet) : View(context
         this.invalidate()
         //开始线程移动贪吃蛇
         thread {
-            while (isStarted) {
-                //通过线程的睡眠，来控制贪吃蛇的移动速度
-                SystemClock.sleep(this.frequency)
-                this.post {
-                    moveTo()
+            while (isRunning) {
+                if (isStarted) {
+                    //通过线程的睡眠，来控制贪吃蛇的移动速度
+                    this.post {
+                        moveTo()
+                    }
+                    SystemClock.sleep(this.frequency)
                 }
             }
         }
     }
 
     /**
-     * 当贪吃蛇吃到食物后，向尾巴添加一块，实现贪吃蛇长度的增长
+     * 重新开始游戏
      * */
-    private fun appendBlockToTail() {
-        //向后面追加长度
-        val last = snake[snake.size - 1]
-        val lastBefore = snake[snake.size - 2]
-        var row = last.row
-        var column = last.column
-
-        if (last.row == lastBefore.row) {
-            if (last.column == 0 || last.column == SnakeGameConfiguration.GAME_COLUMN_COUNT - 1) {
-                row = if (last.row == SnakeGameConfiguration.GAME_ROW_COUNT - 1) last.row - 1 else last.row + 1
-            } else {
-                column = if (last.column < lastBefore.column) last.column - 1 else last.column + 1
-            }
-        }
-        if (last.column == lastBefore.column) {
-            if (last.row == 0 || last.row == SnakeGameConfiguration.GAME_ROW_COUNT - 1) {
-                column = if (last.column == SnakeGameConfiguration.GAME_COLUMN_COUNT - 1) last.column - 1 else last.column + 1
-            } else {
-                row = if (last.row < lastBefore.column) last.row - 1 else last.row + 1
-            }
-        }
-        //向组成贪吃蛇的块的集合中添加一块
-        val block = SnakeBlock(row, column, false)
-        this.snake.add(block)
+    fun restart() {
+        this.generateGird()
+        this.generateFoodInRandom()
+        this.generateSnake()
+        this.direction = DIRECTION.DIRECTION_RIGHT
+        isStarted = true
+        invalidate()
     }
 
     /**
