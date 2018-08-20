@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity() {
                         })
                         .setNegativeButton("Exit game", DialogInterface.OnClickListener { dialog, which ->
                             dialog.dismiss()
+                            finish()
                         }).show()
             }
 

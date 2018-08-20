@@ -118,61 +118,32 @@ class SnakeGameView(context: Context, attributeSet: AttributeSet) : View(context
      * 移动贪吃蛇
      * */
     private fun moveTo() {
-        /**
-         * 移动贪吃蛇
-         * 实现思路
-         *  1. 首先从蛇的尾部开始，向前一个组成蛇的块的对象的位置移动
-         *  2. 然后倒数第二个想倒数第三个的位置移动，依次类图
-         *  3. 到蛇头的位置以后，那么根据移动的方向移动蛇头
-         * */
-        for (i in this.snake.size - 1 downTo 0) {
-            val value = this.snake[i]
-            //根据移动的方向设置贪吃蛇的坐标
-            if (i == 0) {
-                when (this.direction) {
-                    DIRECTION.DIRECTION_UP -> {
-                        value.row -= 1
-                    }
-                    DIRECTION.DIRECTION_DOWN -> {
-                        value.row += 1
-                    }
-                    DIRECTION.DIRECTION_LEFT -> {
-                        value.column -= 1
-                    }
-                    DIRECTION.DIRECTION_RIGHT -> {
-                        value.column += 1
-                    }
-                }
-            } else {
-                val previous = this.snake[i - 1]
-                val current = this.snake[i]
-                current.row = previous.row
-                current.column = previous.column
+        //预先计算好蛇头将要到达的位置
+        var newHeadRow = snake[0].row
+        var newHeadColumn = snake[0].column
+        when (this.direction) {
+            DIRECTION.DIRECTION_UP -> {
+                newHeadRow -= 1
+            }
+            DIRECTION.DIRECTION_DOWN -> {
+                newHeadRow += 1
+            }
+            DIRECTION.DIRECTION_LEFT -> {
+                newHeadColumn -= 1
+            }
+            DIRECTION.DIRECTION_RIGHT -> {
+                newHeadColumn += 1
             }
         }
-        //碰撞检测开始
-        val head = snake[0]
-        //判断超出边界
-        if (head.row < 0
-                || head.row > SnakeGameConfiguration.GAME_ROW_COUNT - 1
-                || head.column == -1
-                || head.column > SnakeGameConfiguration.GAME_COLUMN_COUNT - 1
-                ) {
-            isStarted = false
-            if (this.crashListener != null) {
-                crashListener!!.onCrash()
-            }
-        }
-        //和自己碰撞的检测
-        if (snake.firstOrNull { it != head && it.row == head.row && it.column == head.column } != null) {
-            isStarted = false
-            if (this.crashListener != null) {
-                crashListener!!.onCrash()
-            }
-        }
+
         //检测是否吃到食物
-        if (food.row == head.row && food.column == head.column) {
-            appendBlockToTail()
+        if (food.row == newHeadRow && food.column == newHeadColumn) {
+            //如果吃到了食物，则不移动贪吃蛇，将食物的位置变为贪吃蛇的脑袋
+            snake[0].isHead = false
+
+            val newHead = SnakeBlock(newHeadRow, newHeadColumn, true)
+            snake.add(0, newHead)
+
             if (this.eatenListener != null) {
                 this.eatenListener!!.onEaten()
             }
@@ -180,9 +151,44 @@ class SnakeGameView(context: Context, attributeSet: AttributeSet) : View(context
             if (frequency > 500) {
                 frequency -= 50
             }
+            //重新生成食物
             generateFoodInRandom()
+        } else {
+            //碰撞检测开始
+            //想蛇头方向移动贪吃蛇的身子
+            for (i in this.snake.size - 1 downTo 1) {
+                val previous = this.snake[i - 1]
+                val current = this.snake[i]
+                current.row = previous.row
+                current.column = previous.column
+
+            }
+            //移动蛇头
+            val head = snake[0]
+            head.row = newHeadRow
+            head.column = newHeadColumn
+
+            //判断超出边界
+            if (head.row < 0
+                    || head.row > SnakeGameConfiguration.GAME_ROW_COUNT - 1
+                    || head.column < 0
+                    || head.column > SnakeGameConfiguration.GAME_COLUMN_COUNT - 1
+                    ) {
+                isStarted = false
+                if (this.crashListener != null) {
+                    crashListener!!.onCrash()
+                }
+            }
+            //和自己碰撞的检测
+            if (snake.firstOrNull { it != head && it.row == head.row && it.column == head.column } != null) {
+                isStarted = false
+                if (this.crashListener != null) {
+                    crashListener!!.onCrash()
+                }
+            }
+            //碰撞检测结束
         }
-        //碰撞检测结束
+
         //重绘
         this.invalidate()
     }
